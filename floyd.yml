@@ -1,0 +1,22 @@
+# see: https://docs.floydhub.com/floyd_config
+# All supported configs:
+
+machine: gpu
+env: pytorch-1.4
+input:
+ - destination: input
+   source: foo/datasets/yelp-food/1
+description: this is a test
+max_runtime: 36000
+command: sh run.sh
+
+# You can also define multiple tasks to use with --task argument:
+#
+#task:
+#  evaluate:
+#    machine: gpu
+#    command: python evaluate.py
+#
+#  serve:
+#    machine: cpu
+#    mode: serve
