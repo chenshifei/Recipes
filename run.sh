@@ -14,8 +14,11 @@
 CUDA_VISIBLE_DEVICES=0
 decode_cpu=false
 
+# Make symlinks to access OpenNMT scripts - change this line if needed
+[ ! -h tools/tokenizer ] && ln -s Tokenizer/build/cli tools/tokenizer
+
 # this is usefull to skip some stages during step by step execution
-stage=0
+stage=1
 
 # if you want to run without training and use an existing model in the "exp" folder set notrain to true
 notrain=false
@@ -23,13 +26,26 @@ notrain=false
 # At the moment only "stage" option is available anyway
 . local/parse_options.sh
 
-# Tokenize and prepare the Corpus
+# Build Tokenizer
 if [ $stage -le 0 ]; then
+  echo "$0: building OpenNMT's Tokenizer"
+  git clone https://github.com/OpenNMT/Tokenizer.git
+  cd Tokenizer
+  git submodule init
+  git submodule update
+  mkdir build
+  cd build
+  cmake -DCMAKE_BUILD_TYPE=Release ..
+  make
+  cd ../..
+
+# Tokenize and prepare the Corpus
+if [ $stage -le 1 ]; then
   echo "$0: tokenizing corpus"
-  for f in data/train*.?? ; do tools/tokenize.perl < $f > $f.rawtok ; done
+  for f in data/train*.?? ; do tools/tokenizer/tokenize < $f > $f.rawtok ; done
   cat data/train*.rawtok | python3 local/learn_bpe.py -s 32000 > data/esfritptro.bpe32000
   for f in data/*-????.?? ; do \
-    tools/tokenize.perl -case_feature -joiner_annotate -nparrallel 4 -bpe_model data/esfritptro.bpe32000 < $f > $f.tok
+    tools/tokenizer/tokenize -case_feature -joiner_annotate -nparrallel 4 -bpe_model data/esfritptro.bpe32000 < $f > $f.tok
   done
   for set in train valid test ; do rm data/$set-multi.???.tok ; done
   for src in es fr it pt ro ; do
@@ -47,7 +63,7 @@ if [ $stage -le 0 ]; then
 fi
 
 # Preprocess the data - decide here the vocabulary size 50000 default value
-if [ $stage -le 1 ]; then
+if [ $stage -le 2 ]; then
   mkdir -p exp
   echo "$0: preprocessing corpus"
   onmt_preprocess -src_vocab_size 50000 -tgt_vocab_size 50000 \
@@ -60,7 +76,7 @@ fi
 # Decide here the number of epochs, learning rate, which epoch to start decay, decay rate
 # if you change number of epochs do not forget to change the model name too
 # This example has a smaller topology compared to tuto for faster training (worse results)
-if [ $stage -le 2 ]; then
+if [ $stage -le 3 ]; then
   if [ $notrain = false ]; then
     echo "$0: training starting, will take a while."
     onmt_train -layers 2 -rnn_size 500 -brnn -word_vec_size 600 \
@@ -77,7 +93,7 @@ if [ $stage -le 2 ]; then
 fi
 
 # Deploy model for CPU usage
-if [ $stage -le 3 ]; then
+if [ $stage -le 4 ]; then
   if [ $decode_cpu = true ]; then
     python3 tools/release_model.py -model exp/model-multi-2-500-600"_final.t7" \
     -output exp/model-multi-2-500-600"_cpu.t7"
@@ -86,7 +102,7 @@ fi
 
 # Translate using gpu
 # you can change this by changing the model name from _final to _cpu and remove -gpuid 1
-if [ $stage -le 4 ]; then
+if [ $stage -le 5 ]; then
   [ $decode_cpu = true ] && dec_opt="" || dec_opt="-gpuid 1"
   for src in es fr it pt ro ; do
     for tgt in es fr it pt ro ; do
@@ -97,7 +113,7 @@ if [ $stage -le 4 ]; then
 fi
 
 # Evaluate the generic test set with multi-bleu
-if [ $stage -le 5 ]; then
+if [ $stage -le 6 ]; then
   for src in es fr it pt ro ; do
     for tgt in es fr it pt ro ; do
       [ ! $src = $tgt ] && local/multi-bleu.perl data/test-$src$tgt.$tgt.tok \
