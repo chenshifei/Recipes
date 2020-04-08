@@ -4,18 +4,24 @@
 machine: gpu
 env: pytorch-1.4
 input:
- - destination: input
-   source: foo/datasets/yelp-food/1
+  - destination: data
+    source: chenshifei/datasets/multi-esfriptro-parallel/4
 description: this is a test
-max_runtime: 36000
-command: sh run.sh
+# max_runtime: 36000
+command: bash run.sh
 
 # You can also define multiple tasks to use with --task argument:
 #
-#task:
-#  evaluate:
-#    machine: gpu
-#    command: python evaluate.py
+task:
+  evaluate:
+    input:
+      - destination: data
+        source: chenshifei/datasets/multi-esfriptro-parallel/4
+      - destination: previous_output
+        source: chenshifei/projects/opennmt-multilingual-sample/10/home
+    description: this is a test
+    # max_runtime: 36000
+    command: bash run.sh --stage 2 --output-dir /previous_output/exp
 #
 #  serve:
 #    machine: cpu

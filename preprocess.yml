@@ -1,0 +1,7 @@
+src_vocab_size: 50000
+tgt_vocab_size: 50000
+train_src: /data/train-multi.src.tok
+train_tgt: /data/train-multi.tgt.tok
+valid_src: /data/valid-multi2000.src.tok
+valid_tgt: /data/valid-multi2000.tgt.tok
+save_data: exp/model-multi

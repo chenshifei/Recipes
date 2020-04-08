@@ -1,0 +1,14 @@
+layers: 2
+rnn_size: 500
+encoder_type: brnn
+word_vec_size: 600
+early_stopping: 3
+learning_rate: 1
+# start_decay_at: 5
+keep_checkpoint: 5
+valid_steps: 5000
+train_steps: 10000
+learning_rate_decay: 0.65
+data: exp/model-multi
+save_model: /output/model-multi-2-500-600
+gpu_ranks: 0
